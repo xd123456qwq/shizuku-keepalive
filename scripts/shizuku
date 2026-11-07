@@ -1,0 +1,78 @@
+#!/data/data/com.termux/files/usr/bin/sh
+# shizuku — Shizuku 保活小工具
+# 用法: shizuku start|stop|restart|status|watch|log|adb
+SERIAL=127.0.0.1:5555
+START=/storage/emulated/0/Android/data/moe.shizuku.privileged.api/start.sh
+BOOT=$HOME/.termux/boot/01.sh
+LOG=$HOME/shizuku-boot.log
+
+# 借用已配对的密钥（避开重启后重新配对）
+if [ -r /sdcard/dsh/adbkey ]; then
+  mkdir -p "$HOME/.android"
+  cp /sdcard/dsh/adbkey /sdcard/dsh/adbkey.pub "$HOME/.android/" 2>/dev/null
+  chmod 600 "$HOME/.android/adbkey" 2>/dev/null
+  export ADB_VENDOR_KEYS=/sdcard/dsh/adbkey
+fi
+
+ensure() {
+  adb start-server >/dev/null 2>&1
+  adb connect "$SERIAL" >/dev/null 2>&1
+  adb -s "$SERIAL" shell true >/dev/null 2>&1 && return 0
+
+  echo "5555 不通，扫描无线调试端口..."
+  for p in $(nmap -sT -Pn -n --open -T4 --min-rate 3000 -p 30000-50000 127.0.0.1 2>/dev/null \
+             | awk '/open/{print $1}' | cut -d/ -f1); do
+    adb connect "127.0.0.1:$p" >/dev/null 2>&1
+    if adb -s "127.0.0.1:$p" shell true >/dev/null 2>&1; then
+      echo "找到 adbd: $p，切回 5555"
+      adb -s "127.0.0.1:$p" tcpip 5555 >/dev/null 2>&1
+      sleep 3
+      adb connect "$SERIAL" >/dev/null 2>&1
+      adb -s "$SERIAL" shell true >/dev/null 2>&1 && return 0
+    fi
+  done
+  echo "找不到 adb 通道：请确认「无线调试」是否打开"
+  return 1
+}
+
+is_up() { adb -s "$SERIAL" shell "ps -A -o NAME | grep -q '^shizuku_server\$'" >/dev/null 2>&1; }
+
+case "$1" in
+  start|restart)
+    ensure || exit 1
+    adb -s "$SERIAL" shell "sh $START"
+    ;;
+  stop)
+    adb -s "$SERIAL" shell "kill \$(ps -A -o PID,NAME | grep ' shizuku_server\$' | awk '{print \$1}')" 2>/dev/null
+    echo "已停止（保活循环可能会把它拉回来，先跑 shizuku killwatch）"
+    ;;
+  status)
+    echo -n "adb 通道: "; adb devices | grep -q "$SERIAL" && echo "$SERIAL ✅" || echo "未连接 ❌"
+    echo -n "Shizuku  : "; is_up && echo "运行中 ✅" || echo "没在跑 ❌"
+    echo -n "看门狗   : "; pgrep -f keep_shizuku >/dev/null 2>&1 && echo "运行中 ✅" || echo "未运行 ❌"
+    ;;
+  watch)
+    nohup sh "$BOOT" >/dev/null 2>&1 &
+    echo "看门狗已后台启动"
+    ;;
+  killwatch)
+    pkill -f keep_shizuku 2>/dev/null
+    echo "看门狗已停止"
+    ;;
+  log)
+    tail -20 "$LOG" 2>/dev/null || echo "还没有日志"
+    ;;
+  adb)
+    shift; adb -s "$SERIAL" shell "$*"
+    ;;
+  *)
+    echo "用法: shizuku {start|restart|stop|status|watch|killwatch|log}"
+    echo "  start     启动 Shizuku（通道不通会自动扫描恢复）"
+    echo "  stop      停止 Shizuku"
+    echo "  status    查看通道/Shizuku/看门狗状态"
+    echo "  watch     后台启动看门狗"
+    echo "  killwatch 停止看门狗"
+    echo "  log       看最近日志"
+    echo "  adb <命令> 直接在手机上执行 shell 命令"
+    ;;
+esac
