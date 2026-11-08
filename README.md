@@ -5,13 +5,13 @@
 [English](README.en.md) · **简体中文**
 
 [![Platform](https://img.shields.io/badge/platform-Android%2011%2B-3ddc84?logo=android&logoColor=white)](#前提条件)
-[![Root](https://img.shields.io/badge/root-不需要-blue)](#怎么解决的)
+[![Root](https://img.shields.io/badge/root-不需要-blue)](#原理简介)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Language](https://img.shields.io/badge/lang-简体中文-orange)](README.md)
 
 ---
 
-## 问题出在哪
+## 为什么需要这个工具
 
 用「无线调试」方式启动的 Shizuku，服务进程挂在 `adbd` 的 shell 会话下。**一锁屏、一休眠、一断 Wi-Fi，连接被切，Shizuku 立刻退出**：
 
@@ -21,21 +21,14 @@
 
 网上绝大多数教程只教你关电池优化，但没用——**杀进程的不是电池管理，是调试连接断开**。
 
-## 怎么解决的
+## 原理简介
 
 两件事：
 
 1. **`adb tcpip 5555`** —— 让 `adbd` 以固定 TCP 模式重启。`adbd` 是系统守护进程，锁屏不会停，也不再依赖无线调试会话。
-2. **两个看门狗** —— 一个跑在安卓 shell 侧，一个跑在 Linux 容器/ Termux 里。每 10~15 秒查一次 `shizuku_server`，没了就用 Shizuku 自带的 `start.sh` 拉回来。
+2. **两个看门狗** —— 一个跑在安卓 shell 侧，一个跑在 Termux 里。每 10~15 秒查一次 `shizuku_server`，没了就用 Shizuku 自带的 `start.sh` 拉回来。
 
-```
-Termux adb ──┐
-             ├── 127.0.0.1:5555 ── adbd ── shizuku_server
-容器 adb   ──┘
-             ↑ 两个看门狗都通过这条通道重启 shizuku_server
-```
-
-## 实测结果
+## 实测效果
 
 一加 Ace 3 · ColorOS 16（Android 15）· 内核 5.15.149
 
@@ -63,6 +56,16 @@ Termux adb ──┐
 
 ## 快速开始
 
+这 5 步分别在做什么：
+
+1. **找 adbd 端口** —— 无线调试的端口每次开机都会变
+2. **配对并连接** —— 新密钥需要配对一次，之后一直有效
+3. **切到固定端口 5555** —— 解决锁屏掉线的关键一步，不做就白搭
+4. **拉起 Shizuku** —— 用 Shizuku 自带的 `start.sh`
+5. **装看门狗** —— 安卓 shell 侧，进程死了自动复活
+
+全程在手机本地完成，不需要电脑：
+
 ```sh
 # 1. 找 adbd（无线调试端口每次开机都变）
 nmap -sT -Pn -n --open -T4 -p 30000-50000 127.0.0.1
@@ -87,7 +90,7 @@ adb -s 127.0.0.1:5555 shell \
 
 每一步的验收标准见 **[docs/DEPLOY.md](docs/DEPLOY.md)**。
 
-### 已经部署过，只想重新拉起服务
+## 进阶：已有部署如何重新拉起
 
 前提：Termux 里装好了 `android-tools` 和 `nmap`，仓库在 `~/shizuku-keepalive`。
 
@@ -97,6 +100,22 @@ nohup sh ~/shizuku-keepalive/scripts/boot.sh >/dev/null 2>&1 &
 
 它依次做三件事：扫描无线调试端口 → `tcpip 5555` → 拉起 Shizuku 并挂保活循环。
 进度看 `tail -f ~/shizuku-boot.log`（出现 `channel ok` 即成）。
+
+## 架构说明
+
+```
+Termux adb ──┐
+             ├── 127.0.0.1:5555 ── adbd ── shizuku_server
+容器 adb   ──┘
+             ↑ 两个看门狗都通过这条通道重启 shizuku_server
+```
+
+两个看门狗互相兜底：每 10~15 秒执行一次 `ps | grep shizuku_server`，进程没了就调 Shizuku 自带的 `start.sh` 拉起来。
+
+分工是明确的：
+
+- **安卓侧看门狗**（`keep_shizuku.sh`，跑在 uid 2000 的 shell 里）负责**进程自愈**
+- **Termux 侧看门狗**（`boot.sh`）负责**端口自愈**：连不上就扫端口、切 5555
 
 ## 双看门狗的限制
 
@@ -115,7 +134,7 @@ nohup sh ~/shizuku-keepalive/scripts/boot.sh >/dev/null 2>&1 &
 - 部分设备的 **SELinux** 可能阻止 `adb tcpip`（报 `inaccessible or not found` 或直接失败），需要自行排查：确认 USB 调试已授权、`getenforce` 状态、以及厂商是否限制 adb 改端口。
 - 本方案不修改系统分区、不持久化任何 root 权限，重启后需要重新建立通道。
 
-## 已知限制 / 排查
+## 已知问题 / 排障
 
 | 现象 | 原因 | 处理 |
 |---|---|---|
@@ -144,6 +163,12 @@ nohup sh ~/shizuku-keepalive/scripts/boot.sh >/dev/null 2>&1 &
 ## 免责声明
 
 把 `adbd` 切到固定 TCP 端口会降低默认安全性：`127.0.0.1:5555` 会常开，任何已授权的 adb 客户端都能连。请只在自己的设备上使用，保护好密钥，不需要时关掉。
+
+## 更新日志
+
+- **2026-11-08** 文档结构重整：新增「架构说明」「更新日志」，快速开始加步骤概述；中英文版本结构对齐
+- **2026-11-07** 补充「双看门狗的限制」「依赖与限制」「已知问题 / 排障」；移除与自启动相关的表述
+- **2026-11-07** 首次发布
 
 ## License
 

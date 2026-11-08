@@ -11,7 +11,7 @@
 
 ---
 
-## The problem
+## Why you need this
 
 Shizuku started over **Wireless debugging** lives inside `adbd`'s shell session. Lock the screen, let the phone sleep, or drop Wi-Fi — the connection is cut and Shizuku exits at once:
 
@@ -26,14 +26,7 @@ Most guides only tell you to disable battery optimization. That does not help �
 Two things:
 
 1. **`adb tcpip 5555`** — restarts `adbd` in fixed TCP mode. `adbd` is a system daemon, so it survives screen lock and no longer depends on the Wireless debugging session.
-2. **Two watchdogs** — one on the Android shell side, one inside Termux (or a Linux container). Each polls `shizuku_server` every 10–15 s and revives it with Shizuku's own `start.sh` if it is gone.
-
-```
-Termux adb ──┐
-             ├── 127.0.0.1:5555 ── adbd ── shizuku_server
-container  ──┘
-             ↑ both watchdogs revive shizuku_server through this channel
-```
+2. **Two watchdogs** — one on the Android shell side, one inside Termux. Each polls `shizuku_server` every 10–15 s and revives it with Shizuku's own `start.sh` if it is gone.
 
 ## Measured results
 
@@ -63,6 +56,16 @@ Also verified:
 
 ## Quick start
 
+What the five steps do:
+
+1. **Find the adbd port** — the wireless-debugging port changes on every boot
+2. **Pair and connect** — a new adb key needs one pairing, then it stays valid
+3. **Switch to the fixed port 5555** — this is the step that fixes screen lock; skip it and nothing else helps
+4. **Start Shizuku** — using Shizuku's own `start.sh`
+5. **Install the watchdog** — Android shell side, revives the process automatically
+
+Everything runs on the phone itself, no PC required:
+
 ```sh
 # 1. find adbd (the wireless-debugging port changes every boot)
 nmap -sT -Pn -n --open -T4 -p 30000-50000 127.0.0.1
@@ -87,7 +90,7 @@ adb -s 127.0.0.1:5555 shell \
 
 Acceptance criteria for every step: **[docs/DEPLOY.md](docs/DEPLOY.md)** (Chinese).
 
-### Already deployed? Just restart the service
+## Advanced: restart an existing deployment
 
 Prerequisite: `android-tools` and `nmap` are installed in Termux, and the repo is at `~/shizuku-keepalive`.
 
@@ -97,6 +100,22 @@ nohup sh ~/shizuku-keepalive/scripts/boot.sh >/dev/null 2>&1 &
 
 It does three things in order: scans the wireless-debugging port → `tcpip 5555` → starts Shizuku and keeps it alive.
 Watch progress with `tail -f ~/shizuku-boot.log` (`channel ok` means it worked).
+
+## Architecture
+
+```
+Termux adb ──┐
+             ├── 127.0.0.1:5555 ── adbd ── shizuku_server
+container  ──┘
+             ↑ both watchdogs revive shizuku_server through this channel
+```
+
+The two watchdogs back each other up: every 10–15 s each runs `ps | grep shizuku_server` and revives the process with Shizuku's `start.sh` if it is gone.
+
+The split is deliberate:
+
+- **Android-side watchdog** (`keep_shizuku.sh`, running as uid 2000) heals the **process**
+- **Termux-side watchdog** (`boot.sh`) heals the **port**: if it cannot connect, it scans and switches to 5555
 
 ## Watchdog limitations
 
@@ -144,6 +163,12 @@ Situations where Shizuku is used for ADB-level access to do background / hidden-
 ## Disclaimer
 
 Switching `adbd` to a fixed TCP port weakens the default security posture: `127.0.0.1:5555` stays open and any already-authorized adb client can connect. Only use it on a device you control, keep the key private, and close it when you no longer need it.
+
+## Changelog
+
+- **2026-11-08** Restructured the docs: added "Architecture" and "Changelog", added a step overview to Quick start; Chinese and English now share the same structure
+- **2026-11-07** Added "Watchdog limitations", "Dependencies and limitations", "Known issues / troubleshooting"; removed wording about autostart
+- **2026-11-07** Initial release
 
 ## License
 
