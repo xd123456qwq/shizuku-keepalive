@@ -87,6 +87,17 @@ adb -s 127.0.0.1:5555 shell \
 
 每一步的验收标准见 **[docs/DEPLOY.md](docs/DEPLOY.md)**。
 
+### 已经部署过，只想重新拉起服务
+
+前提：Termux 里装好了 `android-tools` 和 `nmap`，仓库在 `~/shizuku-keepalive`。
+
+```sh
+nohup sh ~/shizuku-keepalive/scripts/boot.sh >/dev/null 2>&1 &
+```
+
+它依次做三件事：扫描无线调试端口 → `tcpip 5555` → 拉起 Shizuku 并挂保活循环。
+进度看 `tail -f ~/shizuku-boot.log`（出现 `channel ok` 即成）。
+
 ## 双看门狗的限制
 
 - **安卓侧看门狗**：`shizuku_server` 被杀后，约 **15 秒**即可复活（检测间隔 10~15 秒）。
