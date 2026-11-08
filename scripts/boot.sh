@@ -1,5 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/sh
-# 由 Termux:Boot 在开机时调用：耐心等 adbd 起来，然后切到 5555 并保活
+# Termux 侧启动脚本：耐心等 adbd 起来，然后切到 5555 并保活（手动运行或由调度器调用）
 export PATH=/data/data/com.termux/files/usr/bin:$PATH
 
 mkdir -p "$HOME/.android"

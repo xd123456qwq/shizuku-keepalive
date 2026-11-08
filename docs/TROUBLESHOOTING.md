@@ -17,7 +17,7 @@
 
 ## 已验证失败 / 不可行的路
 
-### 1. Termux:Boot 开机自启不生效
+### 1. Termux:Boot 不生效
 
 - 现象：重启后 Termux 进程被拉起（`ps -A | grep com.termux` 有结果），但 `~/shizuku-boot.log` 没有新的 `boot hook start` 记录，脚本没执行。
 - 试过：Termux:Boot（GitHub 版 `termux-boot-app_v0.8.1+github.debug.apk`，adb 安装成功）、脚本放 `~/.termux/boot/01.sh`、`chmod +x`。

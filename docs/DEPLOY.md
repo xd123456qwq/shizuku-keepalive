@@ -155,7 +155,7 @@ nohup sh ~/.termux/boot/01.sh >/dev/null 2>&1 &
 
 它会自己扫端口、切 5555、拉起 Shizuku、挂上看门狗。等 20~40 秒即可。
 
-> 关于为什么没能做成全自动，见 `TROUBLESHOOTING.md` 的「Termux:Boot 不生效」一节。
+> 为什么重启后仍然要手动跑这一条，见 `TROUBLESHOOTING.md` 的「Termux:Boot 不生效」一节。
 
 ## 11.（可选）接到 dsh-go 的不打扰模式
 

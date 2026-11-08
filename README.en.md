@@ -86,17 +86,26 @@ adb -s 127.0.0.1:5555 shell \
 
 Full step-by-step, including verification for every stage: **[docs/DEPLOY.md](docs/DEPLOY.md)** (Chinese).
 
-## Known limitations
+## Watchdog limitations
 
-- **`tcpip` does not survive a reboot.** After boot, `adbd` falls back to a random wireless-debugging port.
-- **Termux:Boot autostart did not work in testing.** Termux is launched, but the boot script never runs — most likely a Termux / Termux:Boot signing mismatch. Until that is solved, run one command after each reboot:
+- **Android-side watchdog**: revives `shizuku_server` in about **15 s** (checks every 10–15 s).
+- **Termux-side watchdog**: only works while the adb connection is alive. When the connection drops it does **not** reconnect by itself — run `nohup sh ~/.termux/boot/01.sh >/dev/null 2>&1 &` to recover.
+- The two cover different failures: Termux side heals the port, Android side heals the process.
 
-  ```sh
-  nohup sh ~/.termux/boot/01.sh >/dev/null 2>&1 &
-  ```
+## Dependencies
 
-- Wireless debugging must stay **on**, otherwise there is no port to scan for.
-- Anything that can read your paired adb key can control the device over adb — treat the key as a credential.
+- Requires `nmap` and `adb` in Termux (`pkg install android-tools nmap`), or `android-tools-adb` + `nmap` in a Linux container.
+- On some devices **SELinux may block `adb tcpip`** — check `getenforce`, re-authorize the adb key, or accept that the port cannot be changed.
+
+## Known issues / troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `tcpip 5555` errors out or does nothing | SELinux / vendor restriction | check `getenforce`, re-authorize, try another path |
+| No port found in 30000–50000 | Wireless debugging off, or scanning the wrong host | enable it, scan `127.0.0.1` |
+| Port found but `offline` | Screen sleep dropped the connection | wake the screen, reconnect; always run `tcpip 5555` |
+| **Termux:Boot does not run scripts** | script never executes (likely signing/permission) | do not rely on it; run one command after reboot |
+| **Deep sleep kills processes** | vendor battery policy | disable battery optimization, allow background activity |
 
 ## Repo layout
 
