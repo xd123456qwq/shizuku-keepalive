@@ -16,7 +16,7 @@
 Shizuku started over **Wireless debugging** lives inside `adbd`'s shell session. Lock the screen, let the phone sleep, or drop Wi-Fi — the connection is cut and Shizuku exits at once:
 
 ```
-不打扰模式（后台屏）用不了（Shizuku 未运行）
+Non-disruptive mode (background screen) is unavailable — Shizuku is not running
 ```
 
 Most guides only tell you to disable battery optimization. That does not help — **the process is not killed by the battery manager, it is killed by the debugging connection dropping**.
