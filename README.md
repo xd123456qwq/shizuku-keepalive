@@ -132,7 +132,7 @@ nohup sh ~/shizuku-keepalive/scripts/boot.sh >/dev/null 2>&1 &
 |---|---|
 | `scripts/boot.sh` | Termux 侧：借密钥 → 等 adbd → 切 5555 → 保活循环 |
 | `scripts/keep_shizuku.sh` | 安卓 shell 侧看门狗，不依赖 Termux |
-| `scripts/shizuku` | 命令行工具：`shizuku start / status / watch / log` |
+| `scripts/shizuku` | 命令行工具：`start` / `restart` / `stop` / `status` / `watch` / `killwatch` / `log` / `adb` |
 | `docs/DEPLOY.md` | 第二台设备的完整部署步骤 |
 | `docs/TROUBLESHOOTING.md` | 现象对照表 + 已验证失败的路子 |
 | `SKILL.md` | 给 AI 代理用的技能文件（DSH 格式） |

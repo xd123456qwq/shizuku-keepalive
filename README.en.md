@@ -113,7 +113,7 @@ Full step-by-step, including verification for every stage: **[docs/DEPLOY.md](do
 |---|---|
 | `scripts/boot.sh` | Termux side: borrow the paired key → wait for `adbd` → `tcpip 5555` → watchdog loop |
 | `scripts/keep_shizuku.sh` | Android shell watchdog, independent of Termux/DSH |
-| `scripts/shizuku` | CLI: `shizuku start / status / watch / log` |
+| `scripts/shizuku` | CLI: `start` / `restart` / `stop` / `status` / `watch` / `killwatch` / `log` / `adb` |
 | `docs/DEPLOY.md` | Full deployment guide with acceptance criteria per step |
 | `docs/TROUBLESHOOTING.md` | Symptom → cause table, plus approaches that were tested and failed |
 | `SKILL.md` | Ready-to-use skill file for AI agents (DSH format) |

@@ -2,7 +2,7 @@
 
 ---
 name: shizuku-keepalive
-description: 在免 root 的 Android 手机上让 Shizuku 长时间存活：用 adb tcpip 把 adbd 切到固定端口 5555（锁屏不断）、在安卓侧和容器侧各挂一个看门狗自动重启 shizuku_server、用 Termux 的 adb 做外部触发、并记录重启后恢复的方法。用户说「Shizuku 锁屏就停」「后台模式用不了」「不打扰模式掉线」「想让 Shizuku 一直活着」时用它。Keep Shizuku alive on a non-rooted Android phone without a PC.
+description: 在免 root 的 Android 手机上让 Shizuku 长时间存活：用 adb tcpip 把 adbd 切到固定端口 5555（锁屏不断）、在安卓 shell 侧和 Termux 侧各挂一个看门狗自动重启 shizuku_server、用 Termux 的 adb 做外部触发、并记录重启后恢复的方法。用户说「Shizuku 锁屏就停」「后台模式用不了」「不打扰模式掉线」「想让 Shizuku 一直活着」时用它。Keep Shizuku alive on a non-rooted Android phone without a PC.
 whenToUse: 用户抱怨 Shizuku 服务停止、锁屏后不可用、dsh-go 不打扰模式掉线，或者要给第二台设备复刻这套保活方案时。不用于内核漏洞提权，也不是 root 方案。
 ---
 
@@ -33,8 +33,8 @@ Shizuku 用「无线调试」方式启动时，进程挂在 `adbd` 的 shell 会
 └──────────▲──────────────────┘
            │ 同一个通道
 ┌──────────┴──────────────────┐
-│  DSH 容器 / 任意 shell 脚本  │
-│  keep_shizuku.sh (看门狗)    │
+│  安卓 shell (uid 2000)      │
+│  keep_shizuku.sh (看门狗)   │
 └─────────────────────────────┘
 ```
 

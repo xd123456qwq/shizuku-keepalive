@@ -62,4 +62,3 @@
 |---|---|
 | Termux 侧启动 / 保活 | `~/shizuku-boot.log` |
 | 安卓侧看门狗 | `/data/local/tmp/keep_shizuku.log` |
-| 容器侧看门狗 | `~/.dsh/shizuku-watchdog.log`（默认路径） |
