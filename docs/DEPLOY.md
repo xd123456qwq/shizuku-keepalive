@@ -156,9 +156,3 @@ nohup sh ~/.termux/boot/01.sh >/dev/null 2>&1 &
 它会自己扫端口、切 5555、拉起 Shizuku、挂上看门狗。等 20~40 秒即可。
 
 > 为什么重启后仍然要手动跑这一条，见 `TROUBLESHOOTING.md` 的「Termux:Boot 不生效」一节。
-
-## 11.（可选）接到 dsh-go 的不打扰模式
-
-在 dsh-go：**设置 → 手机操控 → 进阶 → 不打扰模式 → 用 Shizuku**，授权并开启。
-
-通道正常时，AI 就能在后台屏操作，不打断你使用手机。
